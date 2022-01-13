@@ -1,0 +1,2 @@
+# MetaCppNN
+Exercises of MetaNN
