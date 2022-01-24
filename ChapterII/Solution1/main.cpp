@@ -1,54 +1,70 @@
-// =============================================================================
-//                    MetaProg Chapter II Solution 1
-//                         Author : Xin Liu
-// =============================================================================
-
-#include <stdio.h>
 #include <iostream>
-#include <string>
-#include "boost/type_traits.hpp"
+#include <cassert>
+#include <cmath>
+#include <set>
+#include "var_type_dict.h"
+using namespace std;
+using namespace MetaNN;
 
-template<typename T>
-struct add_const_ref
+namespace
 {
-  typedef T const& type;
-};
+struct A; struct B; struct Weight; struct XX;
 
-template<typename T>
-struct add_const_ref<T&>
-{
-  typedef T& type;
-};
+struct FParams : public VarTypeDict<struct A,
+                                    struct B,
+                                    struct Weight> {};
 
-template<bool res>
-void print_msg(const std::string& tn);
+template <typename TIn>
+float fun(const TIn& in) {
+    auto a = in.template Get<A>();
+    auto b = in.template Get<B>();
+    auto weight = in.template Get<Weight>();
 
-template<> void print_msg<true>(const std::string& tn)
-{
-  std::cout << "Test: " << tn  << " pass :)\n";
-}
-template<> void print_msg<false>(const std::string& tn)
-{
-  std::cout << "Test: " << tn  << " fail :(\n";
+    return a * weight + b * (1 - weight);
+    }
 }
 
-int main( int , char* [] )
+#define N 3
+
+void fun_(int(&&input)[N])
 {
-  bool res(true);
-  typedef const int Cint;
-  typedef const int& CRint;
+    for(int i=0; i<N; ++i){
+        std::cout << "a: " << input[i] << "\n";
+        input[i] = 1;
+    }
+}
 
-  res &= boost::is_same<CRint, add_const_ref<CRint>::type>::value;
-  res ? print_msg<true>("CRint") : print_msg<false>("CRint");
-  res &= !boost::is_same<Cint, add_const_ref<Cint>::type>::value;
-  res ? print_msg<true>("Cint") : print_msg<false>("Cint");
+int fun2_()
+{
+    return int{};
+}
 
-  if (res) {
-    printf("Test case passes :)\n");
-  }
-  else {
-    printf("Test case fails :(\n");
-  }
+void main()
+{
+    cout << "Test named params...\t";
+    float aa(1.3f), bb(2.4f), ww(0.1f); 
+    auto res = fun(FParams::Create()
+                             .Set<A>(aa)
+                             .Set<B>(bb)
+                             .Set<Weight>(ww));
+    assert(fabs(res - 0.1 * 1.3 - 0.9 * 2.4) < 0.0001);
+    cout << res << " done\n";
 
-  return 0;
+    int a[N] = {2, 3, 6};
+    fun_(std::move(a));
+
+    for(int i=0; i<N; ++i){
+        std::cout << "new: " << a[i] << "\n";
+    }
+
+    std::string str = "Hello";
+    std::vector<std::string> v;
+    v.push_back(str);
+    std::cout<<"After copy, str is \""<<str<<"\"\n";
+    //输出结果为 After copy, str is "Hello"
+    v.push_back(std::move(str));
+    std::cout<<"After move, str is \""<<str<<"\"\n";
+    //输出结果为 After move, str is ""
+
+    std::cout << "fun2_: " << fun2_() << "\n";
 }
